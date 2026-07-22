@@ -137,7 +137,7 @@ UI-Render-Smoke-Test sind mit **Vitest** abgedeckt.
 ```bash
 npm test         # alle Tests einmal ausführen
 npm run test:watch  # Watch-Modus während der Entwicklung
-npm run check    # Typecheck (tsc) + Tests – wird auch im pre-commit-Hook ausgeführt
+npm run check    # Typecheck (vue-tsc) + Tests – wird auch im pre-commit-Hook ausgeführt
 ```
 
 Die Tests laufen automatisch:
@@ -161,4 +161,4 @@ Projekt-Unterpfad (`https://<user>.github.io/<repo>/`) als auch lokal.
 
 ## Tech-Stack
 
-React 19 · TypeScript · Vite · @dnd-kit (Drag&Drop). Persistenz via localStorage.
+Vue 3 (`<script setup>`) · TypeScript · Vite · vuedraggable/SortableJS (Drag&Drop). Persistenz via localStorage.

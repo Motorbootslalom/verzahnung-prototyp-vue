@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react'
+import { ref, watch, inject, type InjectionKey, type Ref } from 'vue'
 import type {
   AppState,
   BoatConfig,
@@ -301,25 +301,32 @@ function init(): AppState {
   return { ...emptyState, ...loaded, participants }
 }
 
-interface StoreContextValue {
-  state: AppState
-  dispatch: React.Dispatch<Action>
+export interface Store {
+  /** App-Zustand als Ref – jede Action ersetzt den Zustand als Ganzes (immutabel). */
+  state: Ref<AppState>
+  dispatch: (action: Action) => void
 }
 
-const StoreContext = createContext<StoreContextValue | null>(null)
+export const storeKey: InjectionKey<Store> = Symbol('store')
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, init)
+/**
+ * Erzeugt den zentralen Store. Der Zustand wird wie zuvor über einen reinen
+ * Reducer fortgeschrieben; jede Änderung wird automatisch persistiert.
+ */
+export function createStore(): Store {
+  const state = ref(init())
 
-  useEffect(() => {
-    saveState(state)
-  }, [state])
+  function dispatch(action: Action) {
+    state.value = reducer(state.value, action)
+  }
 
-  return <StoreContext.Provider value={{ state, dispatch }}>{children}</StoreContext.Provider>
+  watch(state, (s) => saveState(s))
+
+  return { state, dispatch }
 }
 
-export function useStore(): StoreContextValue {
-  const ctx = useContext(StoreContext)
-  if (!ctx) throw new Error('useStore muss innerhalb von StoreProvider verwendet werden')
-  return ctx
+export function useStore(): Store {
+  const store = inject(storeKey, null)
+  if (!store) throw new Error('useStore muss innerhalb einer App mit bereitgestelltem Store verwendet werden')
+  return store
 }

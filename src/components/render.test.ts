@@ -1,11 +1,14 @@
+// @vitest-environment happy-dom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { createElement } from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
-import { StoreProvider } from '../state/store'
-import { App } from '../App'
-import { VerzahnungView } from './VerzahnungView'
-import { ParallelView } from './ParallelView'
+import { mount } from '@vue/test-utils'
+import type { Component } from 'vue'
+import { createStore, storeKey } from '../state/store'
+import App from '../App.vue'
+import VerzahnungView from './VerzahnungView.vue'
+import ParallelView from './ParallelView.vue'
 import type { AppState, Participant, ClassId } from '../types'
+
+const STORAGE_KEY = 'verzahnung-prototyp:v1'
 
 function make(klasse: ClassId, n: number): Participant[] {
   return Array.from({ length: n }, (_, i) => ({
@@ -21,23 +24,30 @@ function make(klasse: ClassId, n: number): Participant[] {
   }))
 }
 
-/** Minimaler localStorage-Ersatz für die Node-Testumgebung. */
+/**
+ * Minimaler localStorage-Ersatz. Node blendet ohne `--localstorage-file` ein
+ * undefiniertes `localStorage`-Global ein, das die happy-dom-Version verdeckt –
+ * deshalb wird hier explizit gestubbt.
+ */
 function stubStorage(initial: Record<string, string> = {}) {
   const store = { ...initial }
-  ;(globalThis as unknown as { localStorage: Storage }).localStorage = {
-    getItem: (k: string) => store[k] ?? null,
-    setItem: (k: string, v: string) => {
-      store[k] = v
-    },
-    removeItem: (k: string) => {
-      delete store[k]
-    },
-    clear: () => {
-      for (const k of Object.keys(store)) delete store[k]
-    },
-    key: () => null,
-    length: 0,
-  } as Storage
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (k: string) => store[k] ?? null,
+      setItem: (k: string, v: string) => {
+        store[k] = v
+      },
+      removeItem: (k: string) => {
+        delete store[k]
+      },
+      clear: () => {
+        for (const k of Object.keys(store)) delete store[k]
+      },
+      key: () => null,
+      length: 0,
+    } as Storage,
+  })
 }
 
 const seed = (tracks: unknown): AppState => ({
@@ -54,29 +64,39 @@ const seed = (tracks: unknown): AppState => ({
   runningNumbers: { enabled: false, source: 'manoever', start: 1, skipText: '' },
 })
 
-describe('UI-Render (SSR-Smoke)', () => {
+/** Mountet eine Komponente mit frischem Store (liest den ggf. geseedeten localStorage). */
+function mountWithStore(component: Component) {
+  return mount(component, {
+    global: { provide: { [storeKey as symbol]: createStore() } },
+  })
+}
+
+describe('UI-Render (Smoke)', () => {
   beforeEach(() => stubStorage())
 
   it('ohne Daten wird der Setup-Screen gerendert', () => {
-    const html = renderToStaticMarkup(createElement(StoreProvider, null, createElement(App)))
-    expect(html).toContain('Starterfeld generieren')
+    const wrapper = mountWithStore(App)
+    expect(wrapper.html()).toContain('Starterfeld generieren')
   })
 
   it('VerzahnungView rendert Startliste, Spuren und Pause-Chip', () => {
     stubStorage({
-      'verzahnung-prototyp:v1': JSON.stringify(
+      [STORAGE_KEY]: JSON.stringify(
         seed([
           [{ kind: 'class', klasse: 'E' }],
           [{ kind: 'pause', id: 'pp', length: 3 }, { kind: 'class', klasse: '7' }],
         ]),
       ),
     })
-    const html = renderToStaticMarkup(createElement(StoreProvider, null, createElement(VerzahnungView)))
-    expect(html).toContain('Verzahnte Startreihenfolge')
-    expect(html).toContain('Spur A')
-    expect(html).toContain('⏸ Pause')
+    const wrapper = mountWithStore(VerzahnungView)
+    expect(wrapper.html()).toContain('Verzahnte Startreihenfolge')
+    expect(wrapper.html()).toContain('Spur A')
+    expect(wrapper.html()).toContain('⏸ Pause')
     // Pause(3) vor Klasse 7 → E,E,E,7,7,7,7,7,7
-    const badges = [...html.matchAll(/class="class-badge"[^>]*>([E1-7])</g)].map((m) => m[1]).join(',')
+    const badges = wrapper
+      .findAll('.sequence .class-badge')
+      .map((b) => b.text())
+      .join(',')
     expect(badges).toBe('E,E,E,7,7,7,7,7,7')
   })
 
@@ -86,11 +106,11 @@ describe('UI-Render (SSR-Smoke)', () => {
       [{ kind: 'pause', id: 'pp', length: 3 }, { kind: 'class', klasse: '7' }],
     ])
     s.runningNumbers = { enabled: true, source: 'manoever', start: 1, skipText: '' }
-    stubStorage({ 'verzahnung-prototyp:v1': JSON.stringify(s) })
-    const html = renderToStaticMarkup(createElement(StoreProvider, null, createElement(VerzahnungView)))
-    expect(html).toContain('Klassische Startnummern')
+    stubStorage({ [STORAGE_KEY]: JSON.stringify(s) })
+    const wrapper = mountWithStore(VerzahnungView)
+    expect(wrapper.html()).toContain('Klassische Startnummern')
     // Klassische Nummer wird primär angezeigt (startnr-main) in Verzahnungs-Reihenfolge.
-    const nums = [...html.matchAll(/class="startnr-main">(\d+)</g)].map((m) => m[1])
+    const nums = wrapper.findAll('.sequence .startnr-main').map((n) => n.text())
     expect(nums).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
   })
 
@@ -108,14 +128,14 @@ describe('UI-Render (SSR-Smoke)', () => {
       parallelOrderByStartNr: false,
       runningNumbers: { enabled: false, source: 'manoever', start: 1, skipText: '' },
     }
-    stubStorage({ 'verzahnung-prototyp:v1': JSON.stringify(parallelState) })
-    const html = renderToStaticMarkup(createElement(StoreProvider, null, createElement(ParallelView)))
-    expect(html).toContain('Parallel-Slalom')
-    expect(html).toContain('Parcours A')
-    expect(html).toContain('E01')
-    expect(html).toContain('401')
+    stubStorage({ [STORAGE_KEY]: JSON.stringify(parallelState) })
+    const wrapper = mountWithStore(ParallelView)
+    expect(wrapper.html()).toContain('Parallel-Slalom')
+    expect(wrapper.html()).toContain('Parcours A')
+    expect(wrapper.html()).toContain('E01')
+    expect(wrapper.html()).toContain('401')
     // ein voller Block (4 Läufe) mit einem klein- und einem groß-Tag
-    expect(html).toContain('boat-tag klein')
-    expect(html).toContain('boat-tag gross')
+    expect(wrapper.find('.boat-tag.klein').exists()).toBe(true)
+    expect(wrapper.find('.boat-tag.gross').exists()).toBe(true)
   })
 })
