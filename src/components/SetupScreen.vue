@@ -2,6 +2,7 @@
 import { computed, reactive, ref } from 'vue'
 import { useStore } from '../state/store'
 import { CLASSES, ageHint } from '../lib/classes'
+import { FIXED_ORDER_LABEL, parseParticipantsTsv } from '../lib/tsv'
 import type { ClassId, OriginMode } from '../types'
 
 const { state, dispatch } = useStore()
@@ -32,19 +33,45 @@ function start() {
     counts: { ...counts },
   })
 }
+
+// Alternative zum Zufalls-Starterfeld: echte Teilnehmerliste aus Excel (TSV)
+// direkt beim ersten Start importieren.
+const importRaw = ref('')
+const importPreview = computed(() =>
+  importRaw.value.trim() ? parseParticipantsTsv(importRaw.value) : null,
+)
+
+const importPlaceholder =
+  'Zellen aus Excel hier einfügen …\n\n' +
+  'Mit Kopfzeile (Reihenfolge egal): Klasse\tNachname\tVorname\tGröße\tVerein\tGeburtsdatum\tStartnummer\n' +
+  'Ohne Kopfzeile (feste Reihenfolge): ' +
+  FIXED_ORDER_LABEL
+
+function startWithImport() {
+  const res = parseParticipantsTsv(importRaw.value)
+  if (res.imported === 0) return
+  // Erst das (leere) Setup initialisieren, dann die importierten Starter übernehmen.
+  dispatch({
+    type: 'INIT_SETUP',
+    eventName: eventName.value,
+    eventJahr: eventJahr.value,
+    originMode: originMode.value,
+    counts: {},
+  })
+  dispatch({ type: 'IMPORT_PARTICIPANTS', participants: res.participants, mode: 'replace' })
+}
 </script>
 
 <template>
   <div class="setup-wrap">
     <div class="panel">
-      <h2>Starterfeld generieren</h2>
+      <h2>Veranstaltung</h2>
       <p class="hint">
-        Dieser öffentliche Prototyp erzeugt zunächst zufällige Teilnehmer, damit die Darstellung und
-        Verwaltung der Starterlisten mit den Fachteams besprochen werden kann. Alle Daten bleiben
-        lokal im Browser (localStorage) gespeichert.
+        Alle Daten bleiben lokal im Browser (localStorage) gespeichert. Starte mit einem zufällig
+        generierten Starterfeld oder importiere gleich deine Teilnehmerliste aus Excel.
       </p>
 
-      <div class="row" style="margin-bottom: 16px">
+      <div class="row">
         <div class="field" style="flex: 2; min-width: 220px">
           <label>Veranstaltung</label>
           <input class="input" v-model="eventName" placeholder="z. B. 30. Möwepokal" />
@@ -73,6 +100,14 @@ function start() {
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="panel">
+      <h2>Starterfeld generieren</h2>
+      <p class="hint">
+        Dieser öffentliche Prototyp erzeugt zufällige Teilnehmer, damit die Darstellung und
+        Verwaltung der Starterlisten mit den Fachteams besprochen werden kann.
+      </p>
 
       <label style="font-size: 12px; font-weight: 600; color: var(--muted)">
         Anzahl Teilnehmer pro Klasse
@@ -101,6 +136,41 @@ function start() {
         </span>
         <button class="btn primary" :disabled="total === 0" @click="start">
           Starterfeld erzeugen →
+        </button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Oder: Teilnehmer aus Excel importieren</h2>
+      <p class="hint">
+        Kopiere die Zellen deiner Teilnehmerliste aus Excel und füge sie hier ein (TSV). Erkannte
+        Spalten (mit Kopfzeile, Reihenfolge egal): <b>Klasse</b>, Nachname, Vorname, Verein,
+        Bundesland, Geburtsdatum (TT.MM.JJJJ oder ISO), Größe, Startnummer. Ohne Kopfzeile gilt die
+        feste Reihenfolge: {{ FIXED_ORDER_LABEL }}. Fehlende Startnummern werden je Klasse nach
+        Größe vergeben.
+      </p>
+      <textarea
+        class="export-text"
+        v-model="importRaw"
+        rows="8"
+        :placeholder="importPlaceholder"
+      />
+      <p v-if="importPreview" class="note">
+        Vorschau: {{ importPreview.imported }} Starter{{
+          importPreview.usedHeader ? ' · Kopfzeile erkannt' : ' · feste Reihenfolge'
+        }}{{
+          importPreview.skipped.length > 0
+            ? ` · ${importPreview.skipped.length} Zeile(n) übersprungen`
+            : ''
+        }}
+      </p>
+      <div class="row" style="justify-content: flex-end; margin-top: 4px">
+        <button
+          class="btn primary"
+          :disabled="!importPreview || importPreview.imported === 0"
+          @click="startWithImport"
+        >
+          Importieren &amp; starten →
         </button>
       </div>
     </div>

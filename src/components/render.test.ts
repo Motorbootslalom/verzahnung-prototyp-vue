@@ -74,9 +74,30 @@ function mountWithStore(component: Component) {
 describe('UI-Render (Smoke)', () => {
   beforeEach(() => stubStorage())
 
-  it('ohne Daten wird der Setup-Screen gerendert', () => {
+  it('ohne Daten wird der Setup-Screen gerendert (Generieren + Excel-Import)', () => {
     const wrapper = mountWithStore(App)
     expect(wrapper.html()).toContain('Starterfeld generieren')
+    expect(wrapper.html()).toContain('Teilnehmer aus Excel importieren')
+  })
+
+  it('Setup: Excel-Import initialisiert die App mit den importierten Startern', async () => {
+    const wrapper = mountWithStore(App)
+    const tsv =
+      'Klasse\tNachname\tVorname\tVerein\n' +
+      'E\tMuster\tMia\tMYC Test\n' +
+      '3\tBeispiel\tBen\tMBC Test\n'
+    await wrapper.find('textarea').setValue(tsv)
+    const startBtn = wrapper
+      .findAll('button')
+      .find((b) => b.text().includes('Importieren'))!
+    expect(startBtn.attributes('disabled')).toBeUndefined()
+    await startBtn.trigger('click')
+    // Setup abgeschlossen: Tabs sichtbar, Starter in der Kopfzeile gezählt.
+    expect(wrapper.html()).toContain('Teilnehmer verwalten')
+    expect(wrapper.html()).toContain('2 Starter')
+    // Klasse E aufklappen → importierter Starter sichtbar.
+    await wrapper.find('.class-header').trigger('click')
+    expect(wrapper.html()).toContain('Muster')
   })
 
   it('VerzahnungView rendert Startliste, Spuren und Pause-Chip', () => {
