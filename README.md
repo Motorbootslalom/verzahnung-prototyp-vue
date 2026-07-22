@@ -1,12 +1,13 @@
 # Verzahnung – Schlauchbootslalom (Prototyp)
 
-**Live-Demo:** <https://motorbootslalom.github.io/verzahnung-prototyp/>
+**Live-Demo:** <https://motorbootslalom.github.io/verzahnung-prototyp-vue/>
 
 Interaktiver Konzept-**Prototyp** zur **Verzahnung von Startern** beim Schlauchbootslalom.
 Ziel: mit den Fachteams klären, ob Darstellung und Verwaltung der Starterlisten hilfreich sind
 und in das neue Auswertungstool übernommen werden sollen.
 
-Es werden **zufällige Teilnehmer** generiert – keine echten personenbezogenen Daten.
+Es werden **zufällige Teilnehmer** generiert – keine echten personenbezogenen Daten. Alternativ
+lässt sich beim ersten Start direkt eine **Teilnehmerliste aus Excel** importieren.
 Alle Daten liegen ausschließlich **lokal im Browser** (localStorage) und überleben ein Reload.
 
 > **Fachliche Anforderungen** für das Entwicklerteam: siehe [LASTENHEFT.md](LASTENHEFT.md)
@@ -14,7 +15,9 @@ Alle Daten liegen ausschließlich **lokal im Browser** (localStorage) und überl
 
 ## Funktionen
 
-- **Setup:** Anzahl Teilnehmer pro Klasse, Veranstaltungsjahr und Herkunfts-Modus wählen.
+- **Setup:** Anzahl Teilnehmer pro Klasse, Veranstaltungsjahr und Herkunfts-Modus wählen – oder
+  statt der Zufallsgenerierung gleich eine **Teilnehmerliste aus Excel** einfügen
+  („Importieren & starten“).
 - **Zufallsgenerierung:** Vorname, Nachname, Geburtsdatum (gültiger Jahrgang zur Klasse),
   Verein **oder** Bundesland, Startnummer nach Klassen-Präfix (`E01`, `101`, `301`, …).
 - **Teilnehmerverwaltung:** pro Klasse generieren, manuell hinzufügen, einzeln entfernen, Klasse leeren.
@@ -154,7 +157,7 @@ Die Tests laufen automatisch:
 2. In **Settings → Pages → Build and deployment → Source** auf **GitHub Actions** stellen.
 3. Bei jedem Push auf `main` baut und deployt der Workflow
    [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) automatisch nach
-   <https://motorbootslalom.github.io/verzahnung-prototyp/>.
+   <https://motorbootslalom.github.io/verzahnung-prototyp-vue/>.
 
 Der Vite-`base` ist auf `./` gesetzt, daher funktioniert die App sowohl unter einem
 Projekt-Unterpfad (`https://<user>.github.io/<repo>/`) als auch lokal.

@@ -3,7 +3,7 @@
 # Aktivierung (einmalig): git config core.hooksPath .githooks
 # Bei rotem Test bricht der Commit ab. Umgehen im Notfall: git commit --no-verify
 
-echo "▶ pre-commit: tsc -b && vitest run"
+echo "▶ pre-commit: vue-tsc -b && vitest run"
 npm run check
 status=$?
 if [ $status -ne 0 ]; then
