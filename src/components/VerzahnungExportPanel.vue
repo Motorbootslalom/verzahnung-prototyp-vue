@@ -4,12 +4,13 @@ import { useStore } from '../state/store'
 import { formatVerzahnungExport } from '../lib/exportText'
 import { formatStartlistTsv, formatParticipantsTsv } from '../lib/tsv'
 import { buildConfigUrl } from '../lib/urlconfig'
+import { buildFehlerpunkteUrl } from '../lib/fehlerpunkteLink'
 
 /**
  * Aufklappbare Box zum Exportieren der aktuellen Verzahnung (für die
  * Optimierung durch Claude) sowie zum Erzeugen eines teilbaren Konfig-Links.
  */
-type CopyKind = 'export' | 'link' | 'startlist' | 'participants'
+type CopyKind = 'export' | 'link' | 'fehlerpunkte' | 'startlist' | 'participants'
 
 async function copyText(text: string): Promise<boolean> {
   try {
@@ -36,6 +37,8 @@ async function flash(which: CopyKind, text: string) {
 
 const configUrl = () =>
   buildConfigUrl(state.value, typeof window !== 'undefined' ? window.location.href : '')
+
+const fehlerpunkteUrl = computed(() => buildFehlerpunkteUrl(state.value))
 </script>
 
 <template>
@@ -62,6 +65,21 @@ const configUrl = () =>
       <button class="btn sm" :title="configUrl()" @click="flash('link', configUrl())">
         {{ copied === 'link' ? '✓ Link kopiert' : '🔗 Konfig-Link' }}
       </button>
+      <button
+        class="btn sm"
+        title="Einstellungs-Link für die Fehlerpunktlisten (Veranstaltung + Startnummern je Klasse in Startreihenfolge) kopieren"
+        @click="flash('fehlerpunkte', fehlerpunkteUrl)"
+      >
+        {{ copied === 'fehlerpunkte' ? '✓ Link kopiert' : '📝 Fehlerpunkte-Link' }}
+      </button>
+      <a
+        class="btn sm ghost"
+        :href="fehlerpunkteUrl"
+        target="_blank"
+        rel="noopener"
+        title="Fehlerpunkte-Tool mit diesen Startnummern öffnen"
+        >↗</a
+      >
       <button class="btn sm primary" @click="flash('export', exportText)">
         {{ copied === 'export' ? '✓ Kopiert' : '📋 Verzahnung (Text)' }}
       </button>
@@ -69,7 +87,8 @@ const configUrl = () =>
     <p class="hint" style="margin: 8px 0 0">
       Übernimm das Ergebnis nach Excel: <b>Startliste (verzahnt)</b> oder <b>Teilnehmerliste</b> als
       TSV kopieren und in Excel einfügen. Oder die Verzahnung als Text an Claude zur Optimierung
-      geben bzw. den Konfig-Link teilen.
+      geben bzw. den Konfig-Link teilen. Der <b>Fehlerpunkte-Link</b> öffnet die
+      WKR-Fehlerpunktlisten mit Veranstaltung und Startnummern je Klasse in Startreihenfolge.
     </p>
     <textarea v-if="open" class="export-text" readonly :value="exportText" rows="16" />
   </div>

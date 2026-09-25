@@ -148,6 +148,11 @@ select {
   transition: background 0.12s, border-color 0.12s;
 }
 
+a.btn {
+  display: inline-block;
+  text-decoration: none;
+}
+
 .btn:hover {
   background: var(--panel-2);
 }

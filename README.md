@@ -80,6 +80,15 @@ Alle Daten liegen ausschließlich **lokal im Browser** (localStorage) und überl
   Damit lassen sich verschiedene Sortierungen zur Bewertung weitergeben.
 - **Konfigurations-Link:** „🔗 Konfig-Link kopieren“ erzeugt eine teilbare URL mit
   Klassenverteilung, Parcours und Wechsel-Faktoren (siehe unten).
+- **Einstellungs-Link für die Fehlerpunktlisten:** „📝 Fehlerpunkte-Link“ kopiert (bzw. „↗“ öffnet)
+  einen Link zum Schwester-Tool
+  [fehlerpunkte-prototyp-vue](https://motorbootslalom.github.io/fehlerpunkte-prototyp-vue/). Er
+  übergibt die **Veranstaltung** (inkl. Jahr) und die **Startnummern je Klasse in Startreihenfolge**
+  der Manövrier-Verzahnung – bei aktiver klassischer Nummerierung deren Nummern, sonst die
+  klassenbasierten (`E01`, `312`, …). Aufbau, Bezeichnung und Bogen-Auswahl bleiben im
+  Fehlerpunkte-Tool unverändert. Format: dessen Parameter `c` (Base64url-JSON `{ e, n }`, siehe
+  `src/lib/sharelink.ts` dort). Die Ziel-Adresse lässt sich für die lokale Entwicklung per
+  `VITE_FEHLERPUNKTE_URL` überschreiben.
 
 ### Konfiguration per URL-Parameter
 
