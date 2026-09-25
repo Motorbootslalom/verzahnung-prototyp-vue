@@ -44,6 +44,20 @@ select {
   padding: 0 16px 64px;
 }
 
+/* Welche Fassung läuft? Kurze Commit-ID + Zeitpunkt, siehe lib/build.ts. */
+.version-footer {
+  margin-top: 2rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.version-footer .mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 .topbar {
   position: sticky;
   top: 0;

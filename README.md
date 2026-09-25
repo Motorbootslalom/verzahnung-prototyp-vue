@@ -171,6 +171,12 @@ Die Tests laufen automatisch:
 Der Vite-`base` ist auf `./` gesetzt, daher funktioniert die App sowohl unter einem
 Projekt-Unterpfad (`https://<user>.github.io/<repo>/`) als auch lokal.
 
+**Welche Fassung läuft?** Die Fußzeile zeigt den **Codestand** (kurze Commit-ID mit Datum/Uhrzeit
+des Commits) und den **Build-Zeitpunkt**, z. B. `Codestand a925c90 vom 25.09.2026, 14:35 · gebaut …`.
+So lässt sich nach einem Push prüfen, ob Pages schon die neue Fassung ausliefert. Ein `+` hinter der
+ID heißt: gebaut mit nicht committeten Änderungen. Die Werte setzt Vite beim Bauen ein
+(`vite.config.ts` → `src/lib/build.ts`).
+
 ## Tech-Stack
 
 Vue 3 (`<script setup>`) · TypeScript · Vite · vuedraggable/SortableJS (Drag&Drop). Persistenz via localStorage.

@@ -80,6 +80,13 @@ describe('UI-Render (Smoke)', () => {
     expect(wrapper.html()).toContain('Teilnehmer aus Excel importieren')
   })
 
+  it('Fußzeile zeigt den Codestand (Commit + Build-Zeit)', () => {
+    const footer = mountWithStore(App).find('footer.version-footer')
+    expect(footer.exists()).toBe(true)
+    expect(footer.text()).toContain('Codestand')
+    expect(footer.text()).toContain('gebaut')
+  })
+
   it('Setup: Excel-Import initialisiert die App mit den importierten Startern', async () => {
     const wrapper = mountWithStore(App)
     const tsv =

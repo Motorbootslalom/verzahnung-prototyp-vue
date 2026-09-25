@@ -7,6 +7,7 @@ import ParticipantsView from './components/ParticipantsView.vue'
 import VerzahnungView from './components/VerzahnungView.vue'
 import ParallelView from './components/ParallelView.vue'
 import { parseUrlConfig } from './lib/urlconfig'
+import { buildLabel, commitLabel } from './lib/build'
 
 type Tab = 'teilnehmer' | 'verzahnung' | 'parallel'
 
@@ -39,28 +40,31 @@ function resetAll() {
 </script>
 
 <template>
-  <div v-if="!state.initialized" class="app">
+  <div class="app">
     <TopBar />
-    <SetupScreen />
-  </div>
-  <div v-else class="app">
-    <TopBar />
-    <div class="tabs">
-      <button :class="['tab', tab === 'teilnehmer' ? 'active' : '']" @click="tab = 'teilnehmer'">
-        Teilnehmer
-      </button>
-      <button :class="['tab', tab === 'verzahnung' ? 'active' : '']" @click="tab = 'verzahnung'">
-        Verzahnung
-      </button>
-      <button :class="['tab', tab === 'parallel' ? 'active' : '']" @click="tab = 'parallel'">
-        Parallel-Slalom
-      </button>
-      <div style="flex: 1" />
-      <button class="btn ghost sm" @click="resetAll">Zurücksetzen</button>
-    </div>
+    <SetupScreen v-if="!state.initialized" />
+    <template v-else>
+      <div class="tabs">
+        <button :class="['tab', tab === 'teilnehmer' ? 'active' : '']" @click="tab = 'teilnehmer'">
+          Teilnehmer
+        </button>
+        <button :class="['tab', tab === 'verzahnung' ? 'active' : '']" @click="tab = 'verzahnung'">
+          Verzahnung
+        </button>
+        <button :class="['tab', tab === 'parallel' ? 'active' : '']" @click="tab = 'parallel'">
+          Parallel-Slalom
+        </button>
+        <div style="flex: 1" />
+        <button class="btn ghost sm" @click="resetAll">Zurücksetzen</button>
+      </div>
 
-    <ParticipantsView v-if="tab === 'teilnehmer'" />
-    <VerzahnungView v-if="tab === 'verzahnung'" />
-    <ParallelView v-if="tab === 'parallel'" />
+      <ParticipantsView v-if="tab === 'teilnehmer'" />
+      <VerzahnungView v-if="tab === 'verzahnung'" />
+      <ParallelView v-if="tab === 'parallel'" />
+    </template>
+
+    <footer class="version-footer">
+      Codestand <span class="mono">{{ commitLabel() }}</span> · gebaut {{ buildLabel() }}
+    </footer>
   </div>
 </template>
