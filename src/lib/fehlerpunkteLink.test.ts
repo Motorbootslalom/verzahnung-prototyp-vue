@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildFehlerpunkteUrl, encodeFehlerpunkteConfig, numbersByClass } from './fehlerpunkteLink'
+import { buildFehlerpunkteUrl, classOrder, encodeFehlerpunkteConfig, numbersByClass } from './fehlerpunkteLink'
 import type { AppState, ClassId, Participant } from '../types'
 
 function make(klasse: ClassId, n: number): Participant[] {
@@ -62,6 +62,37 @@ describe('Fehlerpunkte-Link', () => {
     expect([...nums.E!, ...nums['1']!].map(Number).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5])
     expect(nums['4']).toEqual(['401', '402'])
     expect(all.length).toBe(7)
+  })
+
+  it('schickt die Klassen-Reihenfolge des ersten Starts mit (Parcours nacheinander)', () => {
+    const state: AppState = {
+      ...baseState(),
+      participants: [...make('E', 2), ...make('1', 2), ...make('3', 2), ...make('4', 2), ...make('5', 1)],
+      parcoursList: [
+        {
+          id: 'p1',
+          name: 'Parcours 1',
+          classIds: ['E', '1', '3'],
+          wechselFaktor: 1,
+          // Manuelle Spur: erst Klasse 1, dann 3, dann E.
+          tracks: [
+            [
+              { kind: 'class', klasse: '1' },
+              { kind: 'class', klasse: '3' },
+              { kind: 'class', klasse: 'E' },
+            ],
+          ],
+        },
+        { id: 'p2', name: 'Parcours 2', classIds: ['5'], wechselFaktor: 1 },
+      ],
+    }
+    // Parcours 1 (1, 3, E), dann Parcours 2 (5); Klasse 4 fährt auf keinem Parcours → hinten.
+    expect(classOrder(state)).toEqual(['1', '3', 'E', '5', '4'])
+    expect(decode(buildFehlerpunkteUrl(state)).k).toBe('13E54')
+  })
+
+  it('ohne Starter keine Klassen-Reihenfolge im Link', () => {
+    expect(decode(buildFehlerpunkteUrl({ ...baseState(), participants: [] })).k).toBeUndefined()
   })
 
   it('ersetzt eine vorhandene Query in der Basis-URL', () => {

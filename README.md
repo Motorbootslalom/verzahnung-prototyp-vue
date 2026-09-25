@@ -85,9 +85,11 @@ Alle Daten liegen ausschließlich **lokal im Browser** (localStorage) und überl
   [fehlerpunkte-prototyp-vue](https://motorbootslalom.github.io/fehlerpunkte-prototyp-vue/). Er
   übergibt die **Veranstaltung** (inkl. Jahr) und die **Startnummern je Klasse in Startreihenfolge**
   der Manövrier-Verzahnung – bei aktiver klassischer Nummerierung deren Nummern, sonst die
-  klassenbasierten (`E01`, `312`, …). Aufbau, Bezeichnung und Bogen-Auswahl bleiben im
-  Fehlerpunkte-Tool unverändert. Format: dessen Parameter `c` (Base64url-JSON `{ e, n }`, siehe
-  `src/lib/sharelink.ts` dort). Die Ziel-Adresse lässt sich für die lokale Entwicklung per
+  klassenbasierten (`E01`, `312`, …). Dazu kommt die **Klassen-Reihenfolge** für die
+  Schnellauswahl der Bögen: die Klassen in der Reihenfolge ihres ersten Starts, Parcours
+  nacheinander (z. B. `1, 3, E, 2` auf Parcours 1, dann `5, 7, 4, 6` auf Parcours 2). Aufbau,
+  Bezeichnung und Bogen-Auswahl bleiben im Fehlerpunkte-Tool unverändert. Format: dessen
+  Parameter `c` (Base64url-JSON `{ e, n, k }`, siehe `src/lib/sharelink.ts` dort). Die Ziel-Adresse lässt sich für die lokale Entwicklung per
   `VITE_FEHLERPUNKTE_URL` überschreiben.
 
 ### Konfiguration per URL-Parameter
