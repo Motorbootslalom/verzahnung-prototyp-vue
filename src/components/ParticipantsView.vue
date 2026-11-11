@@ -28,6 +28,18 @@ function toggle(id: ClassId) {
   expanded.value = next
 }
 
+function renumberAll() {
+  if (
+    confirm(
+      'Alle Startnummern neu vergeben?\n\n' +
+        'Je Klasse fortlaufend ab 01 (E01, E02 …, 101, 102 …) in der aktuellen Reihenfolge. ' +
+        'Bisherige – auch importierte – Nummern werden überschrieben.',
+    )
+  ) {
+    dispatch({ type: 'RENUMBER_ALL' })
+  }
+}
+
 // Kanonische klassische Startnummern (aus der Manövrier-Verzahnung), damit die
 // Teilnehmer-Liste dieselben Nummern zeigt wie die Verzahnungs-Ansichten.
 const running = computed(() => canonicalRunningNumbers(state.value))
@@ -38,10 +50,23 @@ const running = computed(() => canonicalRunningNumbers(state.value))
   <ExcelPanel />
   <RunningNumberControls />
   <div class="panel">
-    <h2>Teilnehmer verwalten</h2>
+    <div class="export-head">
+      <h2>Teilnehmer verwalten</h2>
+      <span class="spacer" style="flex: 1" />
+      <button
+        class="btn sm"
+        :disabled="state.participants.length === 0"
+        title="Alle Startnummern je Klasse fortlaufend neu vergeben (E01, E02 …, 101, 102 …) – in der aktuellen Reihenfolge"
+        @click="renumberAll"
+      >
+        # Neu nummerieren
+      </button>
+    </div>
     <p class="hint">
       Pro Klasse Teilnehmer generieren, manuell hinzufügen oder entfernen. Herkunft (Verein /
-      Bundesland) richtet sich nach der Einstellung oben.
+      Bundesland) richtet sich nach der Einstellung oben. Startnummern bleiben unverändert (auch
+      importierte) – Verschieben und „↕ Größe“ verteilen nur die vorhandenen Nummern neu. Frisch
+      durchnummeriert wird nur mit „Neu nummerieren“.
     </p>
     <ClassSection
       v-for="c in CLASSES"

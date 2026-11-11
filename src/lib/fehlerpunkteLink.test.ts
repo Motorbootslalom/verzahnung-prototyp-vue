@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildFehlerpunkteUrl, classOrder, encodeFehlerpunkteConfig, numbersByClass } from './fehlerpunkteLink'
+import { parseParticipantsTsv } from './tsv'
 import type { AppState, ClassId, Participant } from '../types'
 
 function make(klasse: ClassId, n: number): Participant[] {
@@ -44,6 +45,20 @@ describe('Fehlerpunkte-Link', () => {
     const wire = decode(buildFehlerpunkteUrl(baseState()))
     expect(wire.e).toBe('Möwepokal 2027')
     expect(wire.n).toEqual({ E: ['E01', 'E02', 'E03'], '1': ['101', '102'], '4': ['401', '402'] })
+  })
+
+  it('übergibt importierte Startnummern unverändert (S-Nr.-Kopfzeile, Lücken)', () => {
+    const tsv = [
+      'S-Nr.\tName\tVorname\tKlasse',
+      '103\tRosen\tMaria\t1',
+      'E01\tEttert\tMara\tE',
+      '101\tBujak\tDamian\t1',
+      '107\tButtler\tGlenn\t1',
+    ].join('\n')
+    const state = { ...baseState(), participants: parseParticipantsTsv(tsv).participants }
+    const wire = decode(buildFehlerpunkteUrl(state))
+    expect(wire.n.E).toEqual(['E01'])
+    expect([...wire.n['1']].sort()).toEqual(['101', '103', '107'])
   })
 
   it('hängt das Jahr nicht doppelt an', () => {

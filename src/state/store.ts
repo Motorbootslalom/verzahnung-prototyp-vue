@@ -11,9 +11,11 @@ import type {
   WechselFaktor,
 } from '../types'
 import { generateParticipants } from '../lib/generate'
+import { CLASS_IDS } from '../lib/classes'
 import {
   moveInOrder,
   orderBySize,
+  redistributeNumbers,
   renumberSequential,
   sortedByStartNr,
 } from '../lib/startnumbers'
@@ -69,7 +71,8 @@ export type Action =
   | { type: 'UPDATE_PARTICIPANT'; id: string; patch: Partial<Participant> }
   | { type: 'SET_START_NR'; id: string; startNr: string }
   | { type: 'MOVE_STARTER'; id: string; target: 'first' | 'last' | 'up' | 'down' }
-  | { type: 'RENUMBER_CLASS_BY_SIZE'; klasse: ClassId }
+  | { type: 'ORDER_CLASS_BY_SIZE'; klasse: ClassId }
+  | { type: 'RENUMBER_ALL' }
   | { type: 'REMOVE_PARTICIPANT'; id: string }
   | { type: 'CLEAR_CLASS'; klasse: ClassId }
   | { type: 'ADD_PARCOURS' }
@@ -88,20 +91,15 @@ function dupKey(p: Participant): string {
 }
 
 /**
- * Ersetzt in `participants` die Nummern einer Klasse durch fortlaufende Nummern
- * gemäß der übergebenen (neuen) Reihenfolge dieser Klasse. Andere Klassen und die
- * globale Reihenfolge des Arrays bleiben unberührt.
+ * Übernimmt die geänderten Teilnehmer aus `updated` (per ID). Alle anderen und
+ * die globale Reihenfolge des Arrays bleiben unberührt.
  */
-function applyClassOrder(
-  participants: Participant[],
-  klasse: ClassId,
-  orderedInClass: Participant[],
-): Participant[] {
-  const renumbered = new Map(renumberSequential(orderedInClass).map((p) => [p.id, p]))
-  return participants.map((p) => (p.klasse === klasse ? renumbered.get(p.id) ?? p : p))
+function replaceById(participants: Participant[], updated: Participant[]): Participant[] {
+  const byId = new Map(updated.map((p) => [p.id, p]))
+  return participants.map((p) => byId.get(p.id) ?? p)
 }
 
-function reducer(state: AppState, action: Action): AppState {
+export function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'INIT_SETUP': {
       let participants: Participant[] = []
@@ -200,15 +198,24 @@ function reducer(state: AppState, action: Action): AppState {
       if (!target) return state
       const inClass = sortedByStartNr(state.participants.filter((p) => p.klasse === target.klasse))
       const moved = moveInOrder(inClass, action.id, action.target)
-      return { ...state, participants: applyClassOrder(state.participants, target.klasse, moved) }
+      return { ...state, participants: replaceById(state.participants, redistributeNumbers(moved)) }
     }
 
-    case 'RENUMBER_CLASS_BY_SIZE': {
+    case 'ORDER_CLASS_BY_SIZE': {
       const inClass = state.participants.filter((p) => p.klasse === action.klasse)
       return {
         ...state,
-        participants: applyClassOrder(state.participants, action.klasse, orderBySize(inClass)),
+        participants: replaceById(state.participants, redistributeNumbers(orderBySize(inClass))),
       }
+    }
+
+    case 'RENUMBER_ALL': {
+      // Einzige Aktion, die Nummern frisch vergibt (E01, 101 …) – je Klasse in der
+      // aktuellen Reihenfolge, Lücken und importierte Nummern gehen dabei verloren.
+      const renumbered = CLASS_IDS.flatMap((k) =>
+        renumberSequential(sortedByStartNr(state.participants.filter((p) => p.klasse === k))),
+      )
+      return { ...state, participants: replaceById(state.participants, renumbered) }
     }
 
     case 'REMOVE_PARTICIPANT':

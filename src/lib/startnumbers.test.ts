@@ -4,6 +4,7 @@ import {
   moveInOrder,
   orderBySize,
   parseClassNumber,
+  redistributeNumbers,
   renumberSequential,
   sortedByStartNr,
 } from './startnumbers'
@@ -30,6 +31,26 @@ describe('startnumbers', () => {
     expect(parseClassNumber('E03', 'E')).toBe(3)
     expect(parseClassNumber('712', '7')).toBe(12)
     expect(parseClassNumber('Exx', 'E')).toBeNull()
+    // Fremdes Schema (ohne Klassen-Präfix) gilt nicht als klassenbasierte Nummer.
+    expect(parseClassNumber('7', '3')).toBeNull()
+  })
+
+  it('sortiert auch Nummern ohne Klassen-Präfix numerisch', () => {
+    const list = [mk('3', 1), mk('3', 2), mk('3', 3)]
+    list[0].startNr = '12'
+    list[1].startNr = '7'
+    list[2].startNr = ''
+    expect(sortedByStartNr(list).map((p) => p.startNr)).toEqual(['7', '12', ''])
+  })
+
+  it('verteilt beim Umordnen nur den vorhandenen Nummernbestand neu', () => {
+    const list = [mk('2', 5), mk('2', 7), mk('2', 11)]
+    const reordered = [list[2], list[0], list[1]]
+    expect(redistributeNumbers(reordered).map((p) => [p.id, p.startNr])).toEqual([
+      ['2-11', '205'],
+      ['2-5', '207'],
+      ['2-7', '211'],
+    ])
   })
 
   it('sortiert nach laufender Nummer', () => {

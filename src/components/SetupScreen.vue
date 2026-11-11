@@ -2,7 +2,7 @@
 import { computed, reactive, ref } from 'vue'
 import { useStore } from '../state/store'
 import { CLASSES, ageHint } from '../lib/classes'
-import { FIXED_ORDER_LABEL, parseParticipantsTsv } from '../lib/tsv'
+import { FIXED_ORDER_LABEL, parseParticipantsTsv, startNrImportNote } from '../lib/tsv'
 import type { ClassId, OriginMode } from '../types'
 
 const { state, dispatch } = useStore()
@@ -145,9 +145,10 @@ function startWithImport() {
       <p class="hint">
         Kopiere die Zellen deiner Teilnehmerliste aus Excel und füge sie hier ein (TSV). Erkannte
         Spalten (mit Kopfzeile, Reihenfolge egal): <b>Klasse</b>, Nachname, Vorname, Verein,
-        Bundesland, Geburtsdatum (TT.MM.JJJJ oder ISO), Größe, Startnummer. Ohne Kopfzeile gilt die
-        feste Reihenfolge: {{ FIXED_ORDER_LABEL }}. Fehlende Startnummern werden je Klasse nach
-        Größe vergeben.
+        Bundesland, Geburtsdatum (TT.MM.JJJJ oder ISO), Größe, Startnummer (auch „S-Nr.“). Ohne
+        Kopfzeile gilt die feste Reihenfolge: {{ FIXED_ORDER_LABEL }}. Vorhandene Startnummern
+        werden <b>unverändert</b> übernommen; nur fehlende werden ergänzt (ganze Klasse ohne
+        Nummern: nach Größe).
       </p>
       <textarea
         class="export-text"
@@ -163,6 +164,7 @@ function startWithImport() {
             ? ` · ${importPreview.skipped.length} Zeile(n) übersprungen`
             : ''
         }}
+        <br v-if="startNrImportNote(importPreview)" />{{ startNrImportNote(importPreview) }}
       </p>
       <div class="row" style="justify-content: flex-end; margin-top: 4px">
         <button

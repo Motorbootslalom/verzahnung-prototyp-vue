@@ -77,7 +77,8 @@ Werkzeug soll später in das neue **Auswertungstool** integriert werden.
 | 3 | 12–13 | 7 | 22–27 |
 
 - **LH-01:** Jede Startnummer trägt ein klassenspezifisches Präfix (`E` bzw. die Ziffer) und eine
-  laufende Nummer. Startnummern sind je Klasse fortlaufend und eindeutig.
+  laufende Nummer. Startnummern sind je Klasse eindeutig; vom Tool vergebene sind fortlaufend,
+  importierte dürfen Lücken haben (LH-07a).
 
 ### 4.2 Bootstypen
 
@@ -103,7 +104,14 @@ Werkzeug soll später in das neue **Auswertungstool** integriert werden.
   Spalten ignoriert); fehlt sie, gilt die feste Reihenfolge *Startnummer · Klasse · Nachname ·
   Vorname · Verein · Bundesland · Geburtsdatum · Größe*. Geburtsdatum wird als `TT.MM.JJJJ` oder ISO
   akzeptiert; `Dolphin`/`D` gilt als Klasse `E`. Zeilen ohne gültige Klasse/Namen werden mit Hinweis
-  übersprungen. Fehlende Startnummern werden je Klasse nach Größe vergeben.
+  übersprungen. Spaltennamen werden tolerant erkannt (Groß-/Kleinschreibung, Leerzeichen, Punkte und
+  Bindestriche egal – z. B. `S-Nr.`, `Start-Nr.`, `Geb. Datum`).
+- **LH-07a (Startnummern unverändert):** Importierte Startnummern werden **unverändert** übernommen –
+  auch mit Lücken oder in anderem Schema (z. B. `205`, `207`, `311` oder `7`, `12`). Sie stehen so
+  auf Startlisten und Fehlerpunktbögen und müssen identisch ans Fehlerpunkte-Tool gehen. Nur
+  **leere** Nummern werden ergänzt: fehlen sie in einer ganzen Klasse, nach Größe (LH-06), sonst
+  hinten angehängt (höchste Nummer + 1). Die Import-Vorschau zeigt, ob und wie viele Nummern
+  ergänzt werden.
 - **LH-08 (Import-Modus):** Beim Import ist wählbar zwischen **Alle ersetzen** (neue vollständige
   Liste) und **Ergänzen** (Duplikate nach Name + Klasse werden übersprungen).
 - **LH-09 (Export):** Das Ergebnis kann als **TSV** in die Zwischenablage kopiert und in Excel
@@ -113,12 +121,15 @@ Werkzeug soll später in das neue **Auswertungstool** integriert werden.
 ### 4.5 Klassenbasierte Startnummern bearbeiten
 
 - **LH-10 (Verschieben):** Innerhalb einer Klasse lassen sich Starter an den **Anfang**, ans **Ende**
-  oder um eine Position verschieben; die klassenbasierten Nummern werden dabei fortlaufend neu
-  vergeben.
+  oder um eine Position verschieben; dabei werden nur die **vorhandenen** Nummern der Klasse neu
+  verteilt (Nummernbestand und Lücken bleiben erhalten).
 - **LH-11 (Nummer ändern):** Die klassenbasierte Startnummer eines Starters kann direkt editiert
   werden; doppelt vergebene Nummern werden markiert.
-- **LH-12 (Nach Größe):** Pro Klasse können die Startnummern per Aktion nach Größe neu vergeben werden
-  (klein → groß).
+- **LH-12 (Nach Größe):** Pro Klasse können die Starter per Aktion nach Größe sortiert werden
+  (klein → groß); wie beim Verschieben werden nur die vorhandenen Nummern neu verteilt.
+- **LH-12a (Neu nummerieren):** Per Aktion **„Neu nummerieren"** (mit Rückfrage) werden alle
+  Startnummern je Klasse fortlaufend neu vergeben (`E01`, `E02` …, `101`, `102` …) – in der aktuellen
+  Reihenfolge. Nur diese Aktion schließt Lücken bzw. ersetzt importierte Nummern.
 
 ---
 

@@ -10,17 +10,17 @@ const TAB = '\t'
 /** Logische Spalten, die der Import kennt. */
 type Field = 'startNr' | 'klasse' | 'nachname' | 'vorname' | 'verein' | 'bundesland' | 'geburtsdatum' | 'groesse'
 
-/** Kopfzeilen-Aliasse (normalisiert, kleingeschrieben) → logische Spalte. */
+/**
+ * Kopfzeilen-Aliasse → logische Spalte. Schlüssel in normalisierter Form (siehe
+ * {@link normalizeHeaderCell}): „S-Nr.“, „Start-Nr.“ → `snr`/`startnr`,
+ * „Geb. Datum“ → `gebdatum`.
+ */
 const HEADER_ALIASES: Record<string, Field> = {
   startnummer: 'startNr',
   startnr: 'startNr',
-  'start-nr': 'startNr',
-  'start-nr.': 'startNr',
-  's-nr': 'startNr',
   snr: 'startNr',
   klasse: 'klasse',
   kl: 'klasse',
-  'kl.': 'klasse',
   class: 'klasse',
   ak: 'klasse',
   nachname: 'nachname',
@@ -39,8 +39,6 @@ const HEADER_ALIASES: Record<string, Field> = {
   state: 'bundesland',
   geburtsdatum: 'geburtsdatum',
   geburtstag: 'geburtsdatum',
-  'geb.-datum': 'geburtsdatum',
-  'geb.': 'geburtsdatum',
   geb: 'geburtsdatum',
   gebdatum: 'geburtsdatum',
   birthdate: 'geburtsdatum',
@@ -68,8 +66,9 @@ const FIXED_ORDER: Field[] = [
 /** Menschlich lesbare Beschriftung der festen Reihenfolge (für die UI-Hilfe). */
 export const FIXED_ORDER_LABEL = 'Startnummer · Klasse · Nachname · Vorname · Verein · Bundesland · Geburtsdatum · Größe'
 
+/** Kleinschreibung ohne Leerzeichen, Punkte, Binde- und Unterstriche. */
 function normalizeHeaderCell(cell: string): string {
-  return cell.trim().toLowerCase().replace(/\s+/g, '')
+  return cell.trim().toLowerCase().replace(/[\s._-]+/g, '')
 }
 
 /** Prüft, ob eine Zeile als Kopfzeile taugt (mind. zwei bekannte Spaltennamen). */
@@ -117,6 +116,8 @@ export interface ImportResult {
   participants: Participant[]
   usedHeader: boolean
   imported: number
+  /** Starter ohne Startnummer in der Quelle, deren Nummer der Import ergänzt hat. */
+  assignedNumbers: number
   skipped: ImportSkip[]
 }
 
@@ -124,8 +125,8 @@ export interface ImportResult {
  * Parst eine aus Excel kopierte TSV-Teilnehmerliste. Erkennt eine Kopfzeile
  * automatisch (Spaltenreihenfolge dann egal); fehlt sie, gilt die feste
  * Reihenfolge {@link FIXED_ORDER}. Zeilen ohne gültige Klasse/Namen werden
- * übersprungen und in `skipped` gemeldet. Fehlende Startnummern werden je Klasse
- * nach Größe vergeben.
+ * übersprungen und in `skipped` gemeldet. Vorhandene Startnummern werden
+ * unverändert übernommen; nur fehlende werden ergänzt.
  */
 export function parseParticipantsTsv(text: string): ImportResult {
   const lines = text
@@ -135,7 +136,7 @@ export function parseParticipantsTsv(text: string): ImportResult {
 
   const skipped: ImportSkip[] = []
   if (lines.length === 0) {
-    return { participants: [], usedHeader: false, imported: 0, skipped }
+    return { participants: [], usedHeader: false, imported: 0, assignedNumbers: 0, skipped }
   }
 
   const firstCells = lines[0].split(TAB)
@@ -178,34 +179,47 @@ export function parseParticipantsTsv(text: string): ImportResult {
     })
   })
 
-  fillMissingStartNumbers(participants)
+  const assignedNumbers = fillMissingStartNumbers(participants)
 
-  return { participants, usedHeader, imported: participants.length, skipped }
+  return { participants, usedHeader, imported: participants.length, assignedNumbers, skipped }
 }
 
 /**
- * Ergänzt fehlende klassenbasierte Startnummern. Fehlt in einer Klasse jede
- * Nummer, wird nach Größe durchnummeriert; fehlen nur einzelne, werden sie hinten
- * angehängt (max + 1).
+ * Ergänzt **leere** klassenbasierte Startnummern und liefert deren Anzahl.
+ * Vorhandene Nummern bleiben unverändert – auch mit Lücken oder in anderem
+ * Schema (z. B. 7, 12), denn sie stehen so auf Startlisten und Fehlerpunktbögen.
+ * Fehlt in einer Klasse jede Nummer, wird nach Größe durchnummeriert; fehlen nur
+ * einzelne, werden sie hinten angehängt (höchste Nummer + 1).
  */
-function fillMissingStartNumbers(participants: Participant[]): void {
+function fillMissingStartNumbers(participants: Participant[]): number {
+  let assigned = 0
   for (const klasse of CLASS_IDS) {
     const inClass = participants.filter((p) => p.klasse === klasse)
-    if (inClass.length === 0) continue
-    const withNr = inClass.filter((p) => parseClassNumber(p.startNr, klasse) !== null)
-    if (withNr.length === 0) {
+    const missing = inClass.filter((p) => p.startNr === '')
+    if (missing.length === 0) continue
+    assigned += missing.length
+    if (missing.length === inClass.length) {
       // Ganze Klasse ohne Nummern → nach Größe vergeben.
       orderBySize(inClass).forEach((p, i) => {
         p.startNr = makeStartNr(klasse, i + 1)
       })
     } else {
       let max = 0
-      for (const p of withNr) max = Math.max(max, parseClassNumber(p.startNr, klasse) ?? 0)
-      for (const p of inClass) {
-        if (parseClassNumber(p.startNr, klasse) === null) p.startNr = makeStartNr(klasse, ++max)
-      }
+      for (const p of inClass) max = Math.max(max, parseClassNumber(p.startNr, klasse) ?? 0)
+      for (const p of missing) p.startNr = makeStartNr(klasse, ++max)
     }
   }
+  return assigned
+}
+
+/** Kurzhinweis zur Übernahme der Startnummern für die Import-Vorschau. */
+export function startNrImportNote(res: ImportResult): string {
+  if (res.imported === 0) return ''
+  if (res.assignedNumbers === 0) return 'Startnummern unverändert übernommen'
+  if (res.assignedNumbers === res.imported) {
+    return '⚠ keine Startnummern erkannt – je Klasse nach Größe vergeben'
+  }
+  return `⚠ ${res.assignedNumbers} Starter ohne Startnummer – ergänzt, alle anderen unverändert`
 }
 
 // ---------------------------------------------------------------------------

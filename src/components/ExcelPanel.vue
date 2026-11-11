@@ -6,6 +6,7 @@ import {
   formatParticipantsTsv,
   formatStartlistTsv,
   parseParticipantsTsv,
+  startNrImportNote,
   type ImportResult,
 } from '../lib/tsv'
 
@@ -103,15 +104,17 @@ function onRaw(e: Event) {
       />
       <p class="note" style="margin-top: 6px">
         Erkannte Spalten (mit Kopfzeile, Reihenfolge egal): <b>Klasse</b>, Nachname, Vorname,
-        Verein, Bundesland, Geburtsdatum (TT.MM.JJJJ oder ISO), Größe, Startnummer. Ohne Kopfzeile
-        gilt die feste Reihenfolge: {{ FIXED_ORDER_LABEL }}. Fehlende Startnummern werden je Klasse
-        nach Größe vergeben.
+        Verein, Bundesland, Geburtsdatum (TT.MM.JJJJ oder ISO), Größe, Startnummer (auch „S-Nr.“).
+        Ohne Kopfzeile gilt die feste Reihenfolge: {{ FIXED_ORDER_LABEL }}. Vorhandene Startnummern
+        werden <b>unverändert</b> übernommen; nur fehlende werden ergänzt (ganze Klasse ohne
+        Nummern: nach Größe).
       </p>
 
       <p v-if="preview" class="note">
         Vorschau: {{ preview.imported }} Starter{{
           preview.usedHeader ? ' · Kopfzeile erkannt' : ' · feste Reihenfolge'
         }}{{ preview.skipped.length > 0 ? ` · ${preview.skipped.length} Zeile(n) übersprungen` : '' }}
+        <br v-if="startNrImportNote(preview)" />{{ startNrImportNote(preview) }}
       </p>
 
       <div class="row" style="gap: 8px; margin-top: 4px">
@@ -138,7 +141,9 @@ function onRaw(e: Event) {
         :class="['boat-banner', result.imported > 0 ? 'ok' : 'warn']"
         style="margin-top: 12px"
       >
-        <template v-if="result.imported > 0">✓ {{ result.imported }} Starter importiert.</template>
+        <template v-if="result.imported > 0">
+          ✓ {{ result.imported }} Starter importiert · {{ startNrImportNote(result) }}.
+        </template>
         <template v-else>⚠ Keine Starter erkannt – bitte Format prüfen.</template>
         <template v-if="result.skipped.length > 0">
           {{ ' ' }}{{ result.skipped.length }} Zeile(n) übersprungen:

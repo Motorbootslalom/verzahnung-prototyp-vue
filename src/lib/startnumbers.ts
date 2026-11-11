@@ -18,23 +18,25 @@ export function makeStartNr(klasse: ClassId, n: number): string {
 
 /**
  * Liest die laufende Nummer aus einer klassenbasierten Startnummer (Präfix +
- * Zahl). Liefert `null`, wenn kein numerischer Teil vorhanden ist.
+ * Zahl). Liefert `null`, wenn das Präfix der Klasse fehlt oder kein numerischer
+ * Teil vorhanden ist (z. B. importierte Nummern in anderem Schema).
  */
 export function parseClassNumber(startNr: string, klasse: ClassId): number | null {
-  const num = parseInt(startNr.slice(startNrPrefix(klasse).length), 10)
+  const prefix = startNrPrefix(klasse)
+  if (!startNr.startsWith(prefix)) return null
+  const num = parseInt(startNr.slice(prefix.length), 10)
   return Number.isNaN(num) ? null : num
 }
 
 /**
- * Vergleichsschlüssel für die Sortierung innerhalb einer Klasse: nach laufender
- * Nummer (fehlt sie, ans Ende), dann alphabetisch als stabiler Tiebreak.
+ * Vergleich innerhalb einer Klasse: numerisch nach der ganzen Startnummer
+ * (E01 < E02 < E10, 301 < 311, aber auch importierte 7 < 12); Nummern ohne
+ * Ziffern ans Ende.
  */
 function byNumber(a: Participant, b: Participant): number {
-  const na = parseClassNumber(a.startNr, a.klasse)
-  const nb = parseClassNumber(b.startNr, b.klasse)
-  const va = na ?? Number.MAX_SAFE_INTEGER
-  const vb = nb ?? Number.MAX_SAFE_INTEGER
-  if (va !== vb) return va - vb
+  const da = /\d/.test(a.startNr)
+  const db = /\d/.test(b.startNr)
+  if (da !== db) return da ? -1 : 1
   return a.startNr.localeCompare(b.startNr, 'de', { numeric: true })
 }
 
@@ -62,6 +64,16 @@ export function orderBySize(list: Participant[]): Participant[] {
  */
 export function renumberSequential(ordered: Participant[]): Participant[] {
   return ordered.map((p, i) => ({ ...p, startNr: makeStartNr(p.klasse, i + 1) }))
+}
+
+/**
+ * Verteilt die vorhandenen Nummern einer Klasse (aufsteigend) neu auf die
+ * geordnete Starter-Liste. Der Nummernbestand bleibt erhalten – Lücken und
+ * importierte Nummern (z. B. 205, 207, 311) gehen nicht verloren.
+ */
+export function redistributeNumbers(ordered: Participant[]): Participant[] {
+  const numbers = sortedByStartNr(ordered).map((p) => p.startNr)
+  return ordered.map((p, i) => ({ ...p, startNr: numbers[i] }))
 }
 
 /**

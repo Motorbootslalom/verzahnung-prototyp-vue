@@ -3,6 +3,7 @@ import {
   parseParticipantsTsv,
   formatParticipantsTsv,
   formatStartlistTsv,
+  startNrImportNote,
 } from './tsv'
 import type { AppState } from '../types'
 
@@ -61,6 +62,48 @@ describe('parseParticipantsTsv', () => {
     expect(byName('Klein').startNr).toBe('E01')
     expect(byName('Mittel').startNr).toBe('E02')
     expect(byName('Groß').startNr).toBe('E03')
+    expect(startNrImportNote(res)).toContain('keine Startnummern erkannt')
+  })
+
+  it('erkennt „S-Nr.“/„Geb. Datum“ und übernimmt Nummern mit Lücken unverändert', () => {
+    // Kopfzeile wie in den Starterlisten der Meldesoftware.
+    const text = [
+      row('S-Nr.', 'Name', 'Vorname', 'Verein', 'Geb. Datum', 'Klasse'),
+      row('E01', 'Ettert', 'Mara', 'WSC Möwe', '09.04.2019', 'E'),
+      row('205', 'Brömme', 'Anthony', 'SSC Ketzin', '17.07.2016', '2'),
+      row('207', 'Rumschüssel', 'Karl', 'SSC Ketzin', '31.05.2016', '2'),
+      row('311', 'Feeder', 'Juri', 'WSC Möwe', '16.05.2014', '3'),
+    ].join('\n')
+    const res = parseParticipantsTsv(text)
+    expect(res.participants.map((p) => p.startNr)).toEqual(['E01', '205', '207', '311'])
+    expect(res.participants[1].geburtsdatum).toBe('2016-07-17')
+    expect(res.assignedNumbers).toBe(0)
+    expect(startNrImportNote(res)).toBe('Startnummern unverändert übernommen')
+  })
+
+  it('überschreibt Nummern in anderem Schema nicht (z. B. klassische 7, 12)', () => {
+    const text = [
+      row('Startnummer', 'Klasse', 'Nachname'),
+      row('7', '3', 'A'),
+      row('12', '3', 'B'),
+      row('1', 'E', 'C'),
+    ].join('\n')
+    const res = parseParticipantsTsv(text)
+    expect(res.participants.map((p) => p.startNr)).toEqual(['7', '12', '1'])
+    expect(res.assignedNumbers).toBe(0)
+  })
+
+  it('ergänzt nur leere Nummern hinten an, vorhandene bleiben', () => {
+    const text = [
+      row('Startnummer', 'Klasse', 'Nachname'),
+      row('305', '3', 'A'),
+      row('', '3', 'B'),
+      row('311', '3', 'C'),
+    ].join('\n')
+    const res = parseParticipantsTsv(text)
+    expect(res.participants.map((p) => p.startNr)).toEqual(['305', '312', '311'])
+    expect(res.assignedNumbers).toBe(1)
+    expect(startNrImportNote(res)).toContain('1 Starter ohne Startnummer')
   })
 
   it('behandelt Dolphin/D als Klasse E', () => {

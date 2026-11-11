@@ -77,8 +77,8 @@ function clearAll() {
         <button
           class="btn sm"
           :disabled="starters.length === 0"
-          title="Startnummern nach Größe neu vergeben (klein → groß)"
-          @click="dispatch({ type: 'RENUMBER_CLASS_BY_SIZE', klasse: classId })"
+          title="Nach Größe sortieren (klein → groß) – die vorhandenen Startnummern werden nur neu verteilt"
+          @click="dispatch({ type: 'ORDER_CLASS_BY_SIZE', klasse: classId })"
         >
           ↕ Größe
         </button>

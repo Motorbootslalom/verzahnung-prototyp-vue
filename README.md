@@ -24,13 +24,16 @@ Alle Daten liegen ausschließlich **lokal im Browser** (localStorage) und überl
   Jeder Starter hat zusätzlich eine **Größe** (`XS`…`XXXL`).
 - **Excel-Datenaustausch (TSV):** Eine Teilnehmerliste lässt sich per **Copy&Paste** aus Excel
   importieren – eine **Kopfzeile** wird automatisch erkannt (Spaltenreihenfolge egal), sonst gilt eine
-  feste Reihenfolge. Beim Import wählbar: **Alle ersetzen** oder **Ergänzen** (Duplikate nach
-  Name + Klasse werden übersprungen). Das Ergebnis kopierst du als **verzahnte Startliste** oder als
+  feste Reihenfolge; Spaltennamen wie `S-Nr.` oder `Geb. Datum` werden erkannt. **Vorhandene
+  Startnummern werden unverändert übernommen** (auch mit Lücken wie `205`, `207`), nur leere werden
+  ergänzt – die Vorschau zeigt das an. Beim Import wählbar: **Alle ersetzen** oder **Ergänzen**
+  (Duplikate nach Name + Klasse werden übersprungen). Das Ergebnis kopierst du als **verzahnte Startliste** oder als
   **Teilnehmerliste** (round-trip-fähig) zurück nach Excel.
 - **Klassenbasierte Startnummern bearbeiten:** Pro Klasse lassen sich Starter **verschieben** (an den
   Anfang/ans Ende oder schrittweise) und ihre **Nummer direkt ändern** (Doppelvergaben werden
-  markiert). Die Nummern sind **größenabhängig**: Per Aktion **„↕ Größe"** werden sie nach Größe neu
-  vergeben – kleine Größen vorn, `XXL`/`XXXL` hinten.
+  markiert). Per Aktion **„↕ Größe"** wird nach Größe sortiert – kleine Größen vorn, `XXL`/`XXXL`
+  hinten. Verschieben und „↕ Größe" verteilen nur die **vorhandenen** Nummern neu (Lücken bleiben);
+  frisch durchnummeriert (`E01`, `101` …) wird ausschließlich per **„# Neu nummerieren"**.
 - **Verzahnung:** mehrere Parcours, je Parcours zugeordnete Klassen und Wechsel-Faktor **1–4**.
   Klassen werden nach Starterzahl gleichmäßig auf Spuren verteilt, sodass möglichst immer ein
   Boots-Wechsel stattfindet. Per **Drag&Drop** lassen sich Klassen zwischen und innerhalb der Spuren
